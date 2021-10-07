@@ -11,6 +11,7 @@ import AbstractAlgebra:
    Ring,
    RingElement,
    base_ring,
+   elem_type,
    expressify,
    isone,
    iszero,
@@ -18,6 +19,7 @@ import AbstractAlgebra:
    length,
    one,
    parent,
+   parent_type,
    zero
 
 ###############################################################################
@@ -59,6 +61,10 @@ end
 # implementation
 #
 ###############################################################################
+
+parent_type(::Type{NCMPoly{T}}) where T = NCMPolyRing{T}
+
+elem_type(::Type{NCMPolyRing{T}}) where T = NCMPoly{T}
 
 parent(a::NCMPoly) = a.parent
 
