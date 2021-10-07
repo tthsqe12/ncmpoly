@@ -50,3 +50,18 @@ function free_alg_for_graph(adj::Matrix{Int})
 
         return b, u, A
 end
+
+function check_commutativity(u::Matrix{NCMPoly{Rational{BigInt}}}, gb::Vector{NCMPoly{Rational{BigInt}}}, A::NCMPolyRing{Rational{BigInt}})
+        for i in 1:size(u)[1]
+                for j in 1:size(u)[2]
+                        for k in 1:size(u)[1]
+                                for l in 1:size(u)[2]
+                                        if iszero(rem(u[i, j]*u[k, l] - u[k, l] * u[i, j], gb))
+                                                return false
+                                        end
+                                end
+                        end
+                end
+        end
+        return true
+end

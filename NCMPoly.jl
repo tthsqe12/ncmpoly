@@ -247,6 +247,11 @@ function mul_term(c::T, w::Vector{Int}, a::NCMPoly{T}, wp::Vector{Int}) where T
    return NCMPoly{T}(zcoeffs, zexps, a.length, parent(a))
 end
 
+function Base.:(==)(a::NCMPoly{T}, b::NCMPoly{T}) where T
+        return (view(a.coeffs, 1:a.length) == view(b.coeffs, 1:b.length)) && (view(a.exps, 1:a.length) == view(b.exps, 1:b.length)) && (a.length == b.length) && (a.parent == b.parent) # TODO can a.parent == b.parent make problems?
+end
+
+
 # is this worth optimizing with a heap?
 function Base.:*(a::NCMPoly{T}, b::NCMPoly{T}) where T
    zcoeffs = T[]
