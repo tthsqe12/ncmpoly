@@ -129,7 +129,7 @@ function expressify(a::NCMPoly, x = symbols(parent(a)); context = nothing)
    return sum
 end
 
-@enable_all_show_via_expressify NCMPoly
+#@enable_all_show_via_expressify NCMPoly
 
 function expressify(a::NCMPolyRing; context = nothing)
    return Expr(:sequence, Expr(:text, "Free Associative Algebra over "),
@@ -138,7 +138,7 @@ function expressify(a::NCMPolyRing; context = nothing)
                           Expr(:series, symbols(a)...))
 end
 
-@enable_all_show_via_expressify NCMPolyRing
+#@enable_all_show_via_expressify NCMPolyRing
 
 function zero(a::NCMPolyRing{T}) where T
    return NCMPoly{T}(T[], Vector{Int}[], 0, a)
@@ -700,7 +700,7 @@ function remove_redundancies!(B::Matrix{Vector{NTuple{4, Vector{Int}}}}, s::Int,
                 k = 1
                 while k <= length(B[i, s])
                         if isredundant(B[i, s][k], i, s, B)
-                                deleteat(B[i, j][k])
+                                deleteat(B[i, s][k])
                                 del_counter += 1
                         else 
                                 k += 1
@@ -753,64 +753,7 @@ function add_obstructions(g::Vector{NCMPoly{T}}, B::Matrix{Vector{NTuple{4, Vect
 end
 
 
-# theorem 4.1.14
-function buchberger(g::Vector{NCMPoly{T}}) where T
-
-println("**** starting buchberger ****")
-#show(stdout, "text/plain", g)
-println()
-
-   g = copy(g)
-   R = parent(g[1])
-   
-# step 1
-   s = length(g)
-   dummy_obstr = (Int[], Int[], Int[], Int[])
-   empty_obstr_set = typeof(dummy_obstr)[]
-   B = get_obstructions(g, s)
-@label step2
-   @assert s == length(g)
-   i = j = 0
-   o = dummy_obstr
-   # check all entries with i <= j
-   for jj in 1:s, ii in 1:jj
-      if !isempty(B[ii, jj])
-         (i, j) = (ii, jj)
-         o = popfirst!(B[i, j])
-         break
-      end
-   end
-   if !(i > 0 && j > 0)
-println("\ndone!")
-      # B is empty
-      return g
-   end
-
-# step3
-#println("\nobstruction ", (i, j), ": ", R(o[1]), ", ", R(o[2]),
-#                                  "; ", R(o[3]), ", ", R(o[4]))
-#@show g[i]
-#@show g[j]
-   S = mul_term(inv(leading_coefficient(g[i])), o[1], g[i], o[2]) -
-       mul_term(inv(leading_coefficient(g[j])), o[3], g[j], o[4])
-#@show S
-   Sp = rem(S, g) # or rem_weak
-#@show Sp
-   if iszero(Sp)
-      @goto step2
-   end
-
-# step4
-   s += 1
-   push!(g, Sp)
-   # julia doesn't have a matrix resize!, so make a new matrix :(
-   B = add_obstructions(g, B, s)
-   @goto step2
-end
-
-
-
-function buchberger(g::Vector{NCMPoly{T}}, degbound::Int) where T
+function buchberger(g::Vector{NCMPoly{T}}, degbound = typemax(Int)::Int) where T
 
 println("**** starting buchberger ****")
 #show(stdout, "text/plain", g)
@@ -825,49 +768,49 @@ println()
    empty_obstr_set = typeof(dummy_obstr)[]
 
    B = get_obstructions(g, s)
- @label step2
-   @assert s == length(g)
-   i = j = 0
-   o = dummy_obstr
-   # check all entries with i <= j
-   for jj in 1:s, ii in 1:jj
-      if !isempty(B[ii, jj])
-         (i, j) = (ii, jj)
-         o = popfirst!(B[i, j])
-         break
-      end
-   end
-   if !(i > 0 && j > 0)
-println("\ndone!")
-      # B is empty
-      return g
-   end
+   while true
+           @assert s == length(g)
+           i = j = 0
+           o = dummy_obstr
+           # check all entries with i <= j
+           for jj in 1:s, ii in 1:jj
+              if !isempty(B[ii, jj])
+                 (i, j) = (ii, jj)
+                 o = popfirst!(B[i, j])
+                 break
+              end
+           end
+           if !(i > 0 && j > 0)
+        println("\ndone!")
+              # B is empty
+              return g
+           end
 
-# step3
-#println("\nobstruction ", (i, j), ": ", R(o[1]), ", ", R(o[2]),
-#                                  "; ", R(o[3]), ", ", R(o[4]))
-#@show g[i]
-#@show g[j]
-   S = mul_term(inv(leading_coefficient(g[i])), o[1], g[i], o[2]) -
-       mul_term(inv(leading_coefficient(g[j])), o[3], g[j], o[4])
-#@show S
-   Sp = rem(S, g) # or rem_weak
-   checked_obstructions += 1
-   if checked_obstructions % 5000 == 0
-           println("checked $checked_obstructions obstructions")
-   end
-#@show Sp
-   if iszero(Sp) || deg(Sp) > degbound
-      @goto step2
-   end
+        # step3
+        #println("\nobstruction ", (i, j), ": ", R(o[1]), ", ", R(o[2]),
+        #                                  "; ", R(o[3]), ", ", R(o[4]))
+        #@show g[i]
+        #@show g[j]
+           S = mul_term(inv(leading_coefficient(g[i])), o[1], g[i], o[2]) -
+               mul_term(inv(leading_coefficient(g[j])), o[3], g[j], o[4])
+        #@show S
+           Sp = rem(S, g) # or rem_weak
+           checked_obstructions += 1
+           if checked_obstructions % 5000 == 0
+                   println("checked $checked_obstructions obstructions")
+           end
+        #@show Sp
+           if iszero(Sp) || deg(Sp) > degbound
+                   continue
+           end
 
-# step4
-   s += 1
-   push!(g, Sp)
-   # julia doesn't have a matrix resize!, so make a new matrix :(
-   println("adding new obstructions! checked $checked_obstructions so far")
-   B = add_obstructions(g, B, s)
-   @goto step2
+        # step4
+           s += 1
+           push!(g, Sp)
+           # julia doesn't have a matrix resize!, so make a new matrix :(
+           println("adding new obstructions! checked $checked_obstructions so far")
+           B = add_obstructions(g, B, s)
+   end
 end
 
 
